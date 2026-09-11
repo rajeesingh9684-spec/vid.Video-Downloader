@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="hi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vid.Video Downloader - Unlimited Video Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            position: relative;
+        }
+        
+        /* Background Watermark Text "ANSH" Styles */
+        .bg-watermark-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .bg-watermark-text {
+            font-size: clamp(8rem, 28vw, 32rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            line-height: 0.8;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.07) 0%, rgba(236, 72, 153, 0.04) 50%, rgba(255, 255, 255, 0) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transform: rotate(-12deg) scale(1.1);
+            filter: blur(1px);
+        }
+
+        .light .bg-watermark-text {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(0, 0, 0, 0) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Secondary subtle repeated pattern overlay */
+        .bg-pattern-ansh {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.02;
+            background-image: url("data:image/svg+xml,%3Csvg width='160' height='160' viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='24' fill='%236366f1'%3EANSH%3C/text%3E%3C/svg%3E");
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .light .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col transition-colors duration-300 light:bg-slate-50 light:text-slate-800 relative">
+
+    <!-- Background ANSH Watermark -->
+    <div class="bg-watermark-container" aria-hidden="true">
+        <div class="bg-watermark-text select-none">ANSH</div>
+    </div>
+    <div class="bg-pattern-ansh" aria-hidden="true"></div>
+
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-900/80 border-b border-slate-800 light:bg-white/80 light:border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid font-bold fa-cloud-arrow-down"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">vid.Video Downloader</span>
+                    <span class="text-xs block text-slate-400 font-medium -mt-1">Free All-in-One Downloader</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="themeToggleBtn" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 light:bg-slate-100 light:hover:bg-slate-200 light:text-slate-700 transition">
+                    <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+                <a href="#history" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 light:bg-slate-100 light:hover:bg-slate-200 light:text-slate-700 transition relative">
+                    <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+                    <span id="historyBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-indigo-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-8 sm:py-12 space-y-12 z-10 relative">
+
+        <section class="text-center space-y-6">
+            <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs sm:text-sm font-semibold">
+                <i class="fa-solid fa-bolt text-amber-400"></i>
+                <span>Super Fast 4K Video & Audio Downloader</span>
+            </div>
+            
+            <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                Kisi Bhi Video Ko <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">Ek Click</span> Mein Download Karein
+            </h1>
+            <p class="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto light:text-slate-600">
+                YouTube, Instagram, Facebook, TikTok aur Twitter ke videos ko MP4, MP3, 720p, 1080p, ya Ultra HD 4K quality me bilkul free download karein!
+            </p>
+
+            <!-- Supported Platforms Badge List -->
+            <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <span class="px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-1.5"><i class="fa-brands fa-youtube"></i> YouTube</span>
+                <span class="px-3 py-1 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400 text-xs font-medium flex items-center gap-1.5"><i class="fa-brands fa-instagram"></i> Instagram</span>
+                <span class="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium flex items-center gap-1.5"><i class="fa-brands fa-facebook"></i> Facebook</span>
+                <span class="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-medium flex items-center gap-1.5"><i class="fa-brands fa-tiktok"></i> TikTok</span>
+                <span class="px-3 py-1 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium flex items-center gap-1.5"><i class="fa-brands fa-x-twitter"></i> Twitter / X</span>
+            </div>
+
+            <!-- URL Input Box -->
+            <div class="pt-4 max-w-3xl mx-auto">
+                <form id="urlForm" class="relative group">
+                    <div class="relative flex items-center">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-link text-lg"></i>
+                        </div>
+                        <input type="url" id="videoUrlInput" required placeholder="Yahan video ka URL paste karein (e.g. https://www.youtube.com/watch?...)" 
+                            class="w-full pl-11 pr-32 py-4 rounded-2xl bg-slate-900/90 border-2 border-slate-800 focus:border-indigo-500 focus:outline-none text-sm sm:text-base text-slate-100 placeholder-slate-500 transition shadow-xl light:bg-white/90 light:border-slate-300 light:text-slate-900 light:placeholder-slate-400 backdrop-blur-sm">
+                        
+                        <div class="absolute right-2 flex items-center gap-2">
+                            <button type="button" id="pasteBtn" title="Clipboard se paste karein" class="hidden sm:flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition light:bg-slate-100 light:hover:bg-slate-200 light:text-slate-700">
+                                <i class="fa-regular fa-clipboard"></i> Paste
+                            </button>
+                            <button type="submit" id="fetchBtn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+                                <span>Fetch</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <div id="errorMessage" class="hidden mt-3 text-red-400 text-xs sm:text-sm text-left flex items-center gap-1.5 px-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span id="errorText">Please enter a valid URL.</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="resultSection" class="hidden transition-all duration-500">
+            <div class="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-md light:bg-white/90 light:border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    
+                    <!-- Left Column: Video Preview / Thumbnail -->
+                    <div class="md:col-span-5 space-y-4">
+                        <div class="relative group rounded-2xl overflow-hidden bg-slate-950 aspect-video border border-slate-800 shadow-md">
+                            <img id="videoThumbnail" src="" alt="Video Thumbnail" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                <button id="playPreviewBtn" class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg transform hover:scale-110 transition">
+                                    <i class="fa-solid fa-play ml-1"></i>
+                                </button>
+                            </div>
+                            <span id="videoDuration" class="absolute bottom-2 right-2 px-2 py-1 bg-black/80 backdrop-blur-md rounded-md text-xs font-bold text-white">10:45</span>
+                            <span id="platformTag" class="absolute top-2 left-2 px-2.5 py-1 bg-indigo-600/90 backdrop-blur-md rounded-lg text-xs font-bold text-white uppercase tracking-wider">YouTube</span>
+                        </div>
+
+                        <div>
+                            <h2 id="videoTitle" class="font-bold text-base sm:text-lg line-clamp-2 text-slate-100 light:text-slate-900">Video Title Placeholder</h2>
+                            <p id="videoAuthor" class="text-xs text-slate-400 mt-1 flex items-center gap-1"><i class="fa-solid fa-circle-check text-indigo-400"></i> <span id="authorName">Channel Name</span></p>
+                        </div>
+
+                        <!-- Direct Video Preview Modal/Player Container -->
+                        <div id="playerContainer" class="hidden mt-3 rounded-xl overflow-hidden border border-slate-800">
+                            <video id="videoPreviewPlayer" controls class="w-full max-h-48 bg-black">
+                                <source id="videoSource" src="" type="video/mp4">
+                                Aapka browser video play nahi kar sakta.
+                            </video>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Download Settings & Options -->
+                    <div class="md:col-span-7 flex flex-col justify-between space-y-6">
+                        
+                        <div class="space-y-4">
+                            <!-- Format Selection -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Format Choose Karein:</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button type="button" id="formatVideoBtn" class="format-tab p-3 rounded-xl border-2 border-indigo-500 bg-indigo-500/10 text-indigo-400 font-bold text-sm flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-file-video text-base"></i> Video (MP4)
+                                    </button>
+                                    <button type="button" id="formatAudioBtn" class="format-tab p-3 rounded-xl border-2 border-slate-800 bg-slate-950/50 text-slate-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-slate-700 light:bg-slate-100 light:border-slate-200">
+                                        <i class="fa-solid fa-file-audio text-base"></i> Audio Only (MP3)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Quality Selector (Video) -->
+                            <div id="videoQualityGroup" class="space-y-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Quality Select Karein:</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <label class="quality-option cursor-pointer">
+                                        <input type="radio" name="quality" value="360p" class="peer hidden">
+                                        <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 font-semibold text-xs light:bg-slate-50 light:border-slate-200">
+                                            360p (SD)
+                                        </div>
+                                    </label>
+                                    <label class="quality-option cursor-pointer">
+                                        <input type="radio" name="quality" value="720p" class="peer hidden" checked>
+                                        <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 font-semibold text-xs light:bg-slate-50 light:border-slate-200">
+                                            720p (HD)
+                                        </div>
+                                    </label>
+                                    <label class="quality-option cursor-pointer">
+                                        <input type="radio" name="quality" value="1080p" class="peer hidden">
+                                        <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 font-semibold text-xs light:bg-slate-50 light:border-slate-200">
+                                            1080p (FHD)
+                                        </div>
+                                    </label>
+                                    <label class="quality-option cursor-pointer">
+                                        <input type="radio" name="quality" value="4K" class="peer hidden">
+                                        <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 font-semibold text-xs light:bg-slate-50 light:border-slate-200">
+                                            4K (UHD)
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Quality Selector (Audio) -->
+                            <div id="audioQualityGroup" class="hidden space-y-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Audio Quality (Bitrate):</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <label class="quality-option cursor-pointer">
+                                        <input type="radio" name="audioBitrate" value="128kbps" class="peer hidden">
+                                        <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 font-semibold text-xs light:bg-slate-50 light:border-slate-200">
+                                            128 kbps
+                                        </div>
+                                    </label>
+                                    <label class="quality-option cursor-pointer">
+                                        <input type="radio" name="audioBitrate" value="192kbps" class="peer hidden" checked>
+                                        <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 font-semibold text-xs light:bg-slate-50 light:border-slate-200">
+                                            192 kbps
+                                        </div>
+                                    </label>
+                                    <label class="quality-option cursor-pointer">
+                                        <input type="radio" name="audioBitrate" value="320kbps" class="peer hidden">
+                                        <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 font-semibold text-xs light:bg-slate-50 light:border-slate-200">
+                                            320 kbps (High Quality)
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar Section -->
+                        <div id="progressBox" class="hidden space-y-2 bg-slate-950/70 p-4 rounded-2xl border border-slate-800 light:bg-slate-50 light:border-slate-200">
+                            <div class="flex justify-between items-center text-xs font-semibold">
+                                <span id="progressStatus" class="text-indigo-400 flex items-center gap-2">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Processing video stream...
+                                </span>
+                                <span id="progressPercent" class="text-slate-300">0%</span>
+                            </div>
+                            <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden light:bg-slate-200">
+                                <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-0 transition-all duration-300 rounded-full"></div>
+                            </div>
+                        </div>
+
+                        <!-- Download Action Buttons -->
+                        <div>
+                            <button id="startDownloadBtn" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white font-bold text-base shadow-xl shadow-indigo-600/25 transition active:scale-[0.99] flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Download Now</span>
+                            </button>
+
+                            <a id="directDownloadLink" download="video.mp4" href="#" class="hidden w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base shadow-xl shadow-emerald-600/25 transition active:scale-[0.99] text-center flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>File Ready! Click to Save File</span>
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="history" class="space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 light:border-slate-200">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-history text-indigo-500"></i>
+                    <span>Download History</span>
+                </h3>
+                <button id="clearHistoryBtn" class="text-xs text-slate-400 hover:text-red-400 transition flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i> Clear History
+                </button>
+            </div>
+
+            <div id="historyList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div id="emptyHistoryMsg" class="col-span-full py-12 text-center text-slate-500 space-y-2">
+                    <i class="fa-solid fa-folder-open text-4xl mb-2"></i>
+                    <p class="text-sm">Abhi tak koi download nahi kiya gaya hai.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-6 bg-slate-900/60 p-6 sm:p-8 rounded-3xl border border-slate-800 backdrop-blur-md light:bg-white/80 light:border-slate-200">
+            <div class="text-center space-y-2">
+                <h3 class="text-2xl font-bold">Kaise Use Karein? (Simple Steps)</h3>
+                <p class="text-xs sm:text-sm text-slate-400">vid.Video Downloader se video download karna bohot aasan hai:</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-center space-y-3 light:bg-slate-50 light:border-slate-200">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 font-black text-xl flex items-center justify-center mx-auto">1</div>
+                    <h4 class="font-bold text-sm">URL Copy Karein</h4>
+                    <p class="text-xs text-slate-400">YouTube, Instagram, ya Facebook app se video link copy karein.</p>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-center space-y-3 light:bg-slate-50 light:border-slate-200">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 font-black text-xl flex items-center justify-center mx-auto">2</div>
+                    <h4 class="font-bold text-sm">Link Paste Karein</h4>
+                    <p class="text-xs text-slate-400">Bbox mein URL paste karke "Fetch" button par click karein.</p>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-center space-y-3 light:bg-slate-50 light:border-slate-200">
+                    <div class="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-400 font-black text-xl flex items-center justify-center mx-auto">3</div>
+                    <h4 class="font-bold text-sm">Download Format Select Karein</h4>
+                    <p class="text-xs text-slate-400">Format aur resolution choose karke "Download" dabaein.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-6">
+            <div class="text-center space-y-2">
+                <h3 class="text-2xl font-bold">Frequently Asked Questions (FAQ)</h3>
+                <p class="text-xs sm:text-sm text-slate-400">Aapke sabhi sawalon ke jawab yahan hain</p>
+            </div>
+
+            <div class="space-y-3 max-w-3xl mx-auto">
+                <details class="group bg-slate-900/80 rounded-2xl border border-slate-800 p-4 [&_summary::-webkit-details-marker]:hidden light:bg-white light:border-slate-200 backdrop-blur-sm">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold text-sm sm:text-base text-slate-200 light:text-slate-800">
+                        <span>Kya ye Tool Bilkul Free Hai?</span>
+                        <span class="transition group-open:rotate-180"><i class="fa-solid fa-chevron-down text-indigo-400"></i></span>
+                    </summary>
+                    <p class="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed light:text-slate-600">
+                        Haan! vid.Video Downloader 100% free hai aur isme koi download limit nahi hai. Aap jitne chahe utne videos download kar sakte hain.
+                    </p>
+                </details>
+
+                <details class="group bg-slate-900/80 rounded-2xl border border-slate-800 p-4 [&_summary::-webkit-details-marker]:hidden light:bg-white light:border-slate-200 backdrop-blur-sm">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold text-sm sm:text-base text-slate-200 light:text-slate-800">
+                        <span>Kya Isse Mobile Phone Par Bhi Download Kar Sakte Hain?</span>
+                        <span class="transition group-open:rotate-180"><i class="fa-solid fa-chevron-down text-indigo-400"></i></span>
+                    </summary>
+                    <p class="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed light:text-slate-600">
+                        Bilkul! Ye website Android, iPhone, iPad, Windows, aur Mac sabhi devices me smooth chalti hai.
+                    </p>
+                </details>
+
+                <details class="group bg-slate-900/80 rounded-2xl border border-slate-800 p-4 [&_summary::-webkit-details-marker]:hidden light:bg-white light:border-slate-200 backdrop-blur-sm">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold text-sm sm:text-base text-slate-200 light:text-slate-800">
+                        <span>Kya High Quality MP3/Audio Extract Ho Jayega?</span>
+                        <span class="transition group-open:rotate-180"><i class="fa-solid fa-chevron-down text-indigo-400"></i></span>
+                    </summary>
+                    <p class="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed light:text-slate-600">
+                        Haan, aap kisi bhi video me se sirf audio (MP3 format) ko 320kbps tak high quality me convert karke download kar sakte hain.
+                    </p>
+                </details>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-auto border-t border-slate-800 py-6 bg-slate-900/50 light:border-slate-200 light:bg-white z-10 relative">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="text-xs text-slate-500 light:text-slate-600">© 2026 vid.Video Downloader. All rights reserved. Designed for ANSH.</p>
+        </div>
+    </footer>
+
+    <script>
+        // State variables
+        let selectedFormat = 'video';
+        let currentVideoData = null;
+        let downloadHistory = JSON.parse(localStorage.getItem('vid_videodownloader_history') || '[]');
+
+        // DOM Elements
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+        const urlForm = document.getElementById('urlForm');
+        const videoUrlInput = document.getElementById('videoUrlInput');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const resultSection = document.getElementById('resultSection');
+
+        const videoThumbnail = document.getElementById('videoThumbnail');
+        const videoTitle = document.getElementById('videoTitle');
+        const authorName = document.getElementById('authorName');
+        const platformTag = document.getElementById('platformTag');
+        const videoDuration = document.getElementById('videoDuration');
+
+        const formatVideoBtn = document.getElementById('formatVideoBtn');
+        const formatAudioBtn = document.getElementById('formatAudioBtn');
+        const videoQualityGroup = document.getElementById('videoQualityGroup');
+        const audioQualityGroup = document.getElementById('audioQualityGroup');
+
+        const startDownloadBtn = document.getElementById('startDownloadBtn');
+        const directDownloadLink = document.getElementById('directDownloadLink');
+        const progressBox = document.getElementById('progressBox');
+        const progressBar = document.getElementById('progressBar');
+        const progressStatus = document.getElementById('progressStatus');
+        const progressPercent = document.getElementById('progressPercent');
+
+        const historyList = document.getElementById('historyList');
+        const emptyHistoryMsg = document.getElementById('emptyHistoryMsg');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const historyBadge = document.getElementById('historyBadge');
+
+        const playPreviewBtn = document.getElementById('playPreviewBtn');
+        const playerContainer = document.getElementById('playerContainer');
+        const videoPreviewPlayer = document.getElementById('videoPreviewPlayer');
+        const videoSource = document.getElementById('videoSource');
+
+        // Dark/Light Theme Switching logic
+        themeToggleBtn.addEventListener('click', () => {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                themeIcon.className = 'fa-solid fa-sun text-lg text-amber-500';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                themeIcon.className = 'fa-solid fa-moon text-lg';
+            }
+        });
+
+        // Paste button handler
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            pasteBtn.classList.remove('hidden');
+            pasteBtn.addEventListener('click', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    videoUrlInput.value = text;
+                    hideError();
+                } catch (err) {
+                    showError("Clipboard permission fail ho gaya hai.");
+                }
+            });
+        }
+
+        // Format Switching Handlers
+        formatVideoBtn.addEventListener('click', () => {
+            selectedFormat = 'video';
+            formatVideoBtn.className = 'format-tab p-3 rounded-xl border-2 border-indigo-500 bg-indigo-500/10 text-indigo-400 font-bold text-sm flex items-center justify-center gap-2';
+            formatAudioBtn.className = 'format-tab p-3 rounded-xl border-2 border-slate-800 bg-slate-950/50 text-slate-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-slate-700 light:bg-slate-100 light:border-slate-200';
+            videoQualityGroup.classList.remove('hidden');
+            audioQualityGroup.classList.add('hidden');
+        });
+
+        formatAudioBtn.addEventListener('click', () => {
+            selectedFormat = 'audio';
+            formatAudioBtn.className = 'format-tab p-3 rounded-xl border-2 border-indigo-500 bg-indigo-500/10 text-indigo-400 font-bold text-sm flex items-center justify-center gap-2';
+            formatVideoBtn.className = 'format-tab p-3 rounded-xl border-2 border-slate-800 bg-slate-950/50 text-slate-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-slate-700 light:bg-slate-100 light:border-slate-200';
+            audioQualityGroup.classList.remove('hidden');
+            videoQualityGroup.classList.add('hidden');
+        });
+
+        // Form Submit & URL Detection
+        urlForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const url = videoUrlInput.value.trim();
+            hideError();
+
+            if (!url) {
+                showError("Kripya ek valid video URL paste karein.");
+                return;
+            }
+
+            // Platform Recognition
+            let platform = "Video Source";
+            let platformColor = "bg-indigo-600";
+            let sampleTitle = "Sample Downloadable Video";
+            let sampleAuthor = "Content Creator";
+            let sampleThumbnail = "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&q=80";
+            let sampleDuration = "04:15";
+            let sampleVideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+
+            if (url.includes("youtube.com") || url.includes("youtu.be")) {
+                platform = "YouTube";
+                platformColor = "bg-red-600";
+                sampleTitle = "Amazing 4K Nature & Wildlife Cinematic Video";
+                sampleAuthor = "Nature Studio HD";
+            } else if (url.includes("instagram.com")) {
+                platform = "Instagram";
+                platformColor = "bg-pink-600";
+                sampleTitle = "Trending Instagram Reel - Viral Dance & Music";
+                sampleAuthor = "@viral_reels";
+            } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
+                platform = "Facebook";
+                platformColor = "bg-blue-600";
+                sampleTitle = "Popular Facebook Video Clip";
+                sampleAuthor = "Facebook Page";
+            } else if (url.includes("tiktok.com")) {
+                platform = "TikTok";
+                platformColor = "bg-cyan-600";
+                sampleTitle = "Trending TikTok Video 2026";
+                sampleAuthor = "@tiktok_creator";
+            } else if (url.includes("twitter.com") || url.includes("x.com")) {
+                platform = "Twitter / X";
+                platformColor = "bg-slate-700";
+                sampleTitle = "Viral X Trend Video Clip";
+                sampleAuthor = "@x_user";
+            }
+
+            currentVideoData = {
+                url: url,
+                title: sampleTitle,
+                author: sampleAuthor,
+                platform: platform,
+                thumbnail: sampleThumbnail,
+                duration: sampleDuration,
+                sampleVideoUrl: sampleVideoUrl
+            };
+
+            videoTitle.textContent = currentVideoData.title;
+            authorName.textContent = currentVideoData.author;
+            platformTag.textContent = currentVideoData.platform;
+            platformTag.className = `absolute top-2 left-2 px-2.5 py-1 ${platformColor} backdrop-blur-md rounded-lg text-xs font-bold text-white uppercase tracking-wider`;
+            videoThumbnail.src = currentVideoData.thumbnail;
+            videoDuration.textContent = currentVideoData.duration;
+            videoSource.src = currentVideoData.sampleVideoUrl;
+            videoPreviewPlayer.load();
+
+            progressBox.classList.add('hidden');
+            directDownloadLink.classList.add('hidden');
+            startDownloadBtn.classList.remove('hidden');
+            playerContainer.classList.add('hidden');
+
+            resultSection.classList.remove('hidden');
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        playPreviewBtn.addEventListener('click', () => {
+            playerContainer.classList.toggle('hidden');
+            if (!playerContainer.classList.contains('hidden')) {
+                videoPreviewPlayer.play();
+            } else {
+                videoPreviewPlayer.pause();
+            }
+        });
+
+        // Download Simulation logic
+        startDownloadBtn.addEventListener('click', () => {
+            if (!currentVideoData) return;
+
+            let quality = "720p";
+            if (selectedFormat === 'video') {
+                const selected = document.querySelector('input[name="quality"]:checked');
+                if (selected) quality = selected.value;
+            } else {
+                const selected = document.querySelector('input[name="audioBitrate"]:checked');
+                if (selected) quality = selected.value;
+            }
+
+            startDownloadBtn.classList.add('hidden');
+            progressBox.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+
+            const steps = [
+                { percent: 20, status: "Fetching metadata & stream info..." },
+                { percent: 45, status: "Processing media stream..." },
+                { percent: 75, status: `Converting to ${selectedFormat.toUpperCase()} (${quality})...` },
+                { percent: 95, status: "Generating secure download link..." },
+                { percent: 100, status: "Ready!" }
+            ];
+
+            let stepIndex = 0;
+            const interval = setInterval(() => {
+                if (stepIndex < steps.length) {
+                    const step = steps[stepIndex];
+                    progressBar.style.width = `${step.percent}%`;
+                    progressPercent.textContent = `${step.percent}%`;
+                    progressStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${step.status}`;
+                    stepIndex++;
+                } else {
+                    clearInterval(interval);
+                    
+                    progressBox.classList.add('hidden');
+                    directDownloadLink.classList.remove('hidden');
+                    
+                    const blob = new Blob(["Simulated Video/Audio File Content from vid.Video Downloader"], { type: selectedFormat === 'video' ? 'video/mp4' : 'audio/mp3' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    directDownloadLink.href = blobUrl;
+                    directDownloadLink.download = `${currentVideoData.title.substring(0, 20)}_${quality}.${selectedFormat === 'video' ? 'mp4' : 'mp3'}`;
+
+                    saveToHistory({
+                        id: Date.now(),
+                        title: currentVideoData.title,
+                        platform: currentVideoData.platform,
+                        format: selectedFormat.toUpperCase(),
+                        quality: quality,
+                        date: new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' }),
+                        thumbnail: currentVideoData.thumbnail,
+                        fileUrl: blobUrl
+                    });
+                }
+            }, 600);
+        });
+
+        function saveToHistory(item) {
+            downloadHistory.unshift(item);
+            if (downloadHistory.length > 10) downloadHistory.pop();
+            localStorage.setItem('vid_videodownloader_history', JSON.stringify(downloadHistory));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = '';
+            
+            if (downloadHistory.length === 0) {
+                emptyHistoryMsg.classList.remove('hidden');
+                historyList.appendChild(emptyHistoryMsg);
+                historyBadge.classList.add('hidden');
+                return;
+            }
+
+            emptyHistoryMsg.classList.add('hidden');
+            historyBadge.classList.remove('hidden');
+            historyBadge.textContent = downloadHistory.length;
+
+            downloadHistory.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'flex items-center gap-3 p-3 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm light:bg-white/90 light:border-slate-200 backdrop-blur-sm';
+                card.innerHTML = `
+                    <img src="${item.thumbnail}" class="w-16 h-12 rounded-xl object-cover flex-shrink-0" alt="thumb">
+                    <div class="flex-grow min-w-0">
+                        <h4 class="text-xs font-bold text-slate-200 truncate light:text-slate-800">${item.title}</h4>
+                        <div class="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                            <span class="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-bold">${item.format}</span>
+                            <span>${item.quality}</span>
+                            <span>• ${item.date}</span>
+                        </div>
+                    </div>
+                    <a href="${item.fileUrl}" download class="p-2.5 rounded-xl bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300 transition light:bg-slate-100">
+                        <i class="fa-solid fa-download text-xs"></i>
+                    </a>
+                `;
+                historyList.appendChild(card);
+            });
+        }
+
+        clearHistoryBtn.addEventListener('click', () => {
+            downloadHistory = [];
+            localStorage.removeItem('vid_videodownloader_history');
+            renderHistory();
+        });
+
+        function showError(msg) {
+            errorText.textContent = msg;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // Initialize History on Load
+        renderHistory();
+    </script>
+</body>
+</html>
